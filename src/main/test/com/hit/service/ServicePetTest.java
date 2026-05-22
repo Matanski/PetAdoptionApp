@@ -20,7 +20,6 @@ public class ServicePetTest {
         IAlgoTextCompression algo = new LzwAlgoImpl();
         IDao<Pet> dao = new PetDaoFileImpl(DATASOURCE);
         service = new ServicePet(dao, algo);
-        // Clean slate before each test so tests don't interfere with each other
         for (Pet p : service.getAllPets()) {
             service.removePet(p.getId());
         }

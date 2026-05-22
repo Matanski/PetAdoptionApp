@@ -6,10 +6,6 @@ import com.hit.dm.Pet;
 
 import java.util.Collection;
 
-/**
- * Manages pet listings. Uses IAlgoTextCompression (Strategy Pattern) to compress
- * pet descriptions before persistence and decompress them on retrieval.
- */
 public class ServicePet {
     private final IDao<Pet> dao;
     private final IAlgoTextCompression algo;
