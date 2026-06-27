@@ -1,10 +1,6 @@
-package com.hit.dm;
+package com.hit.client.model;
 
-import java.io.Serializable;
-
-public class Pet implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+public class Pet {
     private int id;
     private String name;
     private String species;
@@ -43,7 +39,6 @@ public class Pet implements Serializable {
 
     @Override
     public String toString() {
-        return "Pet{id=" + id + ", name='" + name + "', species='" + species +
-               "', breed='" + breed + "', age=" + age + ", status='" + status + "'}";
+        return "[" + id + "] " + name + " (" + species + " / " + breed + ") - " + status;
     }
 }

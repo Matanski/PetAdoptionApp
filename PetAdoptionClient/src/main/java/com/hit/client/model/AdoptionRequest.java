@@ -1,10 +1,6 @@
-package com.hit.dm;
+package com.hit.client.model;
 
-import java.io.Serializable;
-
-public class AdoptionRequest implements Serializable {
-    private static final long serialVersionUID = 1L;
-
+public class AdoptionRequest {
     private int id;
     private int userId;
     private int petId;
@@ -35,7 +31,6 @@ public class AdoptionRequest implements Serializable {
 
     @Override
     public String toString() {
-        return "AdoptionRequest{id=" + id + ", userId=" + userId +
-               ", petId=" + petId + ", status='" + status + "'}";
+        return "[" + id + "] Pet#" + petId + " - " + status + " (User#" + userId + ")";
     }
 }

@@ -3,11 +3,14 @@ package com.hit.service;
 import com.hit.dao.IDao;
 import com.hit.dm.AdoptionRequest;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.stream.Collectors;
+import java.util.List;
 
+// handles business logic for adoption requests
 public class ServiceAdoption {
-    private final IDao<AdoptionRequest> dao;
+
+    private IDao<AdoptionRequest> dao;
 
     public ServiceAdoption(IDao<AdoptionRequest> dao) {
         this.dao = dao;
@@ -26,9 +29,13 @@ public class ServiceAdoption {
     }
 
     public Collection<AdoptionRequest> getRequestsByPet(int petId) throws Exception {
-        return dao.getAll().stream()
-                .filter(r -> r.getPetId() == petId)
-                .collect(Collectors.toList());
+        List<AdoptionRequest> result = new ArrayList<>();
+        for (AdoptionRequest r : dao.getAll()) {
+            if (r.getPetId() == petId) {
+                result.add(r);
+            }
+        }
+        return result;
     }
 
     public void approveRequest(int id) throws Exception {

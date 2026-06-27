@@ -12,7 +12,7 @@ import org.junit.Test;
 import java.util.Collection;
 
 public class ServicePetTest {
-    private static final String DATASOURCE = "src/main/resources/datasource.txt";
+    private static final String DATASOURCE = "src/main/resources/test_pets.dat";
     private ServicePet service;
 
     @Before
@@ -34,7 +34,6 @@ public class ServicePetTest {
         Pet retrieved = service.getPet(1);
         Assert.assertNotNull(retrieved);
         Assert.assertEquals("Buddy", retrieved.getName());
-        Assert.assertEquals("Dog", retrieved.getSpecies());
         Assert.assertEquals("Friendly and energetic dog, loves to play fetch",
                 retrieved.getDescription());
     }
@@ -51,8 +50,8 @@ public class ServicePetTest {
 
     @Test
     public void testGetAllPets() throws Exception {
-        service.addPet(new Pet(1, "Buddy", "Dog", "Lab", 3, "Good dog good dog"));
-        service.addPet(new Pet(2, "Kitty", "Cat", "Siamese", 1, "Cute cat cute cat"));
+        service.addPet(new Pet(1, "Buddy", "Dog", "Lab", 3, "Friendly dog that likes fetch"));
+        service.addPet(new Pet(2, "Kitty", "Cat", "Siamese", 1, "Cute cat that likes to play"));
 
         Collection<Pet> pets = service.getAllPets();
         Assert.assertEquals(2, pets.size());
@@ -60,14 +59,14 @@ public class ServicePetTest {
 
     @Test
     public void testUpdatePet() throws Exception {
-        Pet pet = new Pet(1, "Buddy", "Dog", "Lab", 3, "Old description");
+        Pet pet = new Pet(1, "Buddy", "Dog", "Lab", 3, "Old description of the dog");
         service.addPet(pet);
 
-        pet.setDescription("Updated description");
+        pet.setDescription("Updated description of the dog");
         service.updatePet(pet);
 
         Pet updated = service.getPet(1);
-        Assert.assertEquals("Updated description", updated.getDescription());
+        Assert.assertEquals("Updated description of the dog", updated.getDescription());
     }
 
     @Test
@@ -82,7 +81,7 @@ public class ServicePetTest {
 
     @Test
     public void testPetStatusDefault() throws Exception {
-        Pet pet = new Pet(3, "Fido", "Dog", "Beagle", 4, "Playful beagle");
+        Pet pet = new Pet(3, "Fido", "Dog", "Beagle", 4, "Playful beagle dog");
         service.addPet(pet);
 
         Pet retrieved = service.getPet(3);

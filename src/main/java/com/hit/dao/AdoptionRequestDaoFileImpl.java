@@ -7,32 +7,39 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+// saves and loads adoption requests from a file
 public class AdoptionRequestDaoFileImpl implements IDao<AdoptionRequest> {
-    private final String filePath;
+
+    private String filePath;
 
     public AdoptionRequestDaoFileImpl(String filePath) {
         this.filePath = filePath;
     }
 
-    @SuppressWarnings("unchecked")
     private List<AdoptionRequest> readAll() {
         File file = new File(filePath);
-        if (!file.exists() || file.length() == 0) return new ArrayList<>();
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
-            return (List<AdoptionRequest>) ois.readObject();
+        if (!file.exists() || file.length() == 0)
+            return new ArrayList<>();
+
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath));
+            List<AdoptionRequest> requests = (List<AdoptionRequest>) ois.readObject();
+            ois.close();
+            return requests;
         } catch (Exception e) {
+            System.out.println("Error reading adoptions file: " + e.getMessage());
             return new ArrayList<>();
         }
     }
 
     private void writeAll(List<AdoptionRequest> requests) throws IOException {
         File file = new File(filePath);
-        File parent = file.getParentFile();
-        if (parent != null) parent.mkdirs();
-        if (!file.exists()) file.createNewFile();
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
-            oos.writeObject(requests);
-        }
+        if (file.getParentFile() != null)
+            file.getParentFile().mkdirs();
+
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath));
+        oos.writeObject(requests);
+        oos.close();
     }
 
     @Override
@@ -44,10 +51,11 @@ public class AdoptionRequestDaoFileImpl implements IDao<AdoptionRequest> {
 
     @Override
     public AdoptionRequest get(int id) throws Exception {
-        return readAll().stream()
-                .filter(r -> r.getId() == id)
-                .findFirst()
-                .orElse(null);
+        for (AdoptionRequest r : readAll()) {
+            if (r.getId() == id)
+                return r;
+        }
+        return null;
     }
 
     @Override
@@ -58,7 +66,12 @@ public class AdoptionRequestDaoFileImpl implements IDao<AdoptionRequest> {
     @Override
     public void delete(int id) throws Exception {
         List<AdoptionRequest> requests = readAll();
-        requests.removeIf(r -> r.getId() == id);
+        for (int i = 0; i < requests.size(); i++) {
+            if (requests.get(i).getId() == id) {
+                requests.remove(i);
+                break;
+            }
+        }
         writeAll(requests);
     }
 

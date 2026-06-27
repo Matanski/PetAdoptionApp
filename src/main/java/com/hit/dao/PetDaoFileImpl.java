@@ -7,32 +7,41 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+// saves and loads pets from a file using object serialization
 public class PetDaoFileImpl implements IDao<Pet> {
-    private final String filePath;
+
+    private String filePath;
 
     public PetDaoFileImpl(String filePath) {
         this.filePath = filePath;
     }
 
-    @SuppressWarnings("unchecked")
+    // read all pets from the file
     private List<Pet> readAll() {
         File file = new File(filePath);
-        if (!file.exists() || file.length() == 0) return new ArrayList<>();
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
-            return (List<Pet>) ois.readObject();
+        if (!file.exists() || file.length() == 0)
+            return new ArrayList<>();
+
+        try {
+            ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath));
+            List<Pet> pets = (List<Pet>) ois.readObject();
+            ois.close();
+            return pets;
         } catch (Exception e) {
+            System.out.println("Error reading file: " + e.getMessage());
             return new ArrayList<>();
         }
     }
 
+    // write all pets back to the file
     private void writeAll(List<Pet> pets) throws IOException {
         File file = new File(filePath);
-        File parent = file.getParentFile();
-        if (parent != null) parent.mkdirs();
-        if (!file.exists()) file.createNewFile();
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
-            oos.writeObject(pets);
-        }
+        if (file.getParentFile() != null)
+            file.getParentFile().mkdirs();
+
+        ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath));
+        oos.writeObject(pets);
+        oos.close();
     }
 
     @Override
@@ -44,10 +53,11 @@ public class PetDaoFileImpl implements IDao<Pet> {
 
     @Override
     public Pet get(int id) throws Exception {
-        return readAll().stream()
-                .filter(p -> p.getId() == id)
-                .findFirst()
-                .orElse(null);
+        for (Pet p : readAll()) {
+            if (p.getId() == id)
+                return p;
+        }
+        return null;
     }
 
     @Override
@@ -58,7 +68,12 @@ public class PetDaoFileImpl implements IDao<Pet> {
     @Override
     public void delete(int id) throws Exception {
         List<Pet> pets = readAll();
-        pets.removeIf(p -> p.getId() == id);
+        for (int i = 0; i < pets.size(); i++) {
+            if (pets.get(i).getId() == id) {
+                pets.remove(i);
+                break;
+            }
+        }
         writeAll(pets);
     }
 
