@@ -1,9 +1,16 @@
 ### IntelliJ IDEA ###
 out/
+out_*/
 !**/src/main/**/out/
 !**/src/test/**/out/
 .kotlin
 .idea/
+
+### Project-specific ###
+.claude/
+UsersMatanAppDataLocalTempFitLog/
+# JUnit test data files (created at runtime by the *Test classes)
+**/resources/test_*.dat
 
 ### Eclipse ###
 .apt_generated

@@ -18,7 +18,8 @@ import java.util.List;
 public class MainApp extends Application {
 
     private static final String HOST = "localhost";
-    private static final int PORT = 34567;
+    private static final int PET_PORT = 34567;
+    private static final int ADOPTION_PORT = 34568;
 
     private AppController controller;
     private ObservableList<String> petListItems = FXCollections.observableArrayList();
@@ -27,7 +28,7 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        controller = new AppController(HOST, PORT);
+        controller = new AppController(HOST, PET_PORT, ADOPTION_PORT);
 
         primaryStage.setTitle("Pet Adoption App");
 

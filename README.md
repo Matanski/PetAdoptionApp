@@ -1,91 +1,111 @@
 # PetAdoption
 
-A client/server-style Java application for managing pet adoptions and rehoming, built as part of the **Advanced Java Programming** course at HIT (Holon Institute of Technology), Semester B 2026.
+A client/server pet-adoption and rehoming system, built for the **Advanced Java Programming** course at HIT (Holon Institute of Technology), Semester B 2026.
 
-This is **Part B** of the project — the application layer that uses the [PetAdoptionAlgoModule](https://github.com/Matanski/PetAdoptionAlgoModule) algorithm library (Part A) as a binary dependency.
+The project is split across three independent IntelliJ projects plus a separate algorithm library:
 
-## Overview
-
-The application stores pet listings and adoption requests, persisting them to a local file via Java object serialization. Pet descriptions are transparently compressed before storage and decompressed on retrieval using a pluggable text-compression algorithm injected at runtime — a classic **Strategy Pattern** wired through dependency injection.
+| Project | Role | Part |
+|---|---|---|
+| [PetAdoptionAlgoModule](https://github.com/Matanski/PetAdoptionAlgoModule) | Text-compression algorithm library (RLE + LZW), packaged as `AlgorithmModule.jar` | A |
+| `PetServer/` | TCP server exposing the **pet** API. Uses the algorithm to compress descriptions. | B + C |
+| `AdoptionServer/` | TCP server exposing the **adoption** API. No algorithm needed. | B + C |
+| `PetAdoptionClient/` | JavaFX desktop client (MVC) that talks to both servers over sockets. | D |
 
 ## Architecture
 
 ```
-+----------------------+         +-----------------+         +----------------------+
-|   ServicePet         |  uses   |  IAlgo          |  impl   |  LzwAlgoImpl         |
-|   ServiceAdoption    +-------->+  TextCompression+<--------+  RleAlgoImpl         |
-|   (Business Logic)   |         |  (Strategy)     |         |  (in AlgorithmModule)|
-+----------+-----------+         +-----------------+         +----------------------+
-           |
-           | uses
-           v
-+----------------------+         +-----------------+
-|   IDao<T>            |  impl   |  *DaoFileImpl   |
-|   (Repository API)   +<--------+  (ObjectStream  |
-|                      |         |   persistence)  |
-+----------------------+         +-----------------+
+                         ┌─────────────────────────┐
+                         │   PetAdoptionClient      │
+                         │   (JavaFX, MVC)          │
+                         │                          │
+                         │  View → AppController →  │
+                         │        ServerClient      │
+                         └───────┬─────────┬────────┘
+                    pet/*  JSON  │         │  adoption/*  JSON
+                     over TCP    │         │   over TCP
+                    (port 34567) │         │  (port 34568)
+                         ┌───────▼───┐ ┌───▼──────────┐
+                         │ PetServer │ │AdoptionServer│
+                         └─────┬─────┘ └──────┬───────┘
+              Server → HandleRequest → ControllerFactory → Controller
+                                    → Service → IDao → *.dat file
+                     (PetServer also → IAlgoTextCompression)
 ```
 
-### Design Principles
+## How a request flows (server side)
 
-- **Open/Closed Principle** — Services depend on the `IAlgoTextCompression` and `IDao<T>` interfaces, not concrete classes. New algorithms or persistence backends can be added without touching service code.
-- **Strategy Pattern** — The compression algorithm is passed into `ServicePet` via constructor injection. Swapping `LzwAlgoImpl` for `RleAlgoImpl` is a one-line change.
-- **Dependency Injection** — All wiring happens externally (in `Main` or `ServicePetTest`), keeping classes decoupled and easy to test.
+1. `Server` listens on a `ServerSocket`; every accepted client socket is handled on its own thread.
+2. `HandleRequest` reads the JSON line, deserializes it into a `Request` with **gson**, and reads `headers.action` (e.g. `"pet/save"`).
+3. `ControllerFactory` splits the action into a prefix (`pet`) and sub-action (`save`) and returns the registered `Controller` (**Factory Pattern**).
+4. The `Controller` calls the matching `Service` method and wraps the result in a `Response`.
+5. `HandleRequest` serializes the `Response` back to JSON and writes it to the socket.
 
-## Project Structure
-
+### JSON wire format
+```json
+{ "headers": { "action": "pet/save" },
+  "body":    { "id": 1, "name": "Buddy", "species": "Dog", "age": 3, "description": "..." } }
 ```
-PetAdoption/
-├── lib/
-│   ├── AlgorithmModule.jar     (Part A compiled output)
-│   ├── junit-4.13.2.jar
-│   └── hamcrest-core-1.3.jar
-├── src/main/java/com/hit/
-│   ├── dm/                     Data Models (Pet, User, AdoptionRequest)
-│   ├── dao/                    IDao + file-based implementations
-│   ├── service/                ServicePet, ServiceAdoption
-│   └── Main.java
-├── src/main/test/com/hit/
-│   └── service/ServicePetTest.java
-└── src/main/resources/
-    └── datasource.txt          Persistence file written by the DAO
+Response:
+```json
+{ "status": 200, "message": "OK", "data": { ... } }
 ```
 
-## Key Classes
+## Design principles
 
-| Class | Responsibility |
-|---|---|
-| `Pet`, `User`, `AdoptionRequest` | Plain serializable data models |
-| `IDao<T>` | Generic CRUD contract — `save`, `get`, `getAll`, `delete`, `update` |
-| `PetDaoFileImpl` / `AdoptionRequestDaoFileImpl` | File-backed DAOs using `ObjectInputStream` / `ObjectOutputStream` |
-| `ServicePet` | Pet business logic; compresses/decompresses descriptions via injected `IAlgoTextCompression` |
-| `ServiceAdoption` | Adoption-request workflow (submit, approve, reject, list) |
-| `ServicePetTest` | JUnit 4 test class that wires algorithm + DAO + service together end-to-end |
+- **Open/Closed** — Services depend on the `IAlgoTextCompression` and `IDao<T>` interfaces, not concrete classes.
+- **Strategy Pattern** — the compression algorithm is injected into `ServicePet` via its constructor.
+- **Factory Pattern** — `ControllerFactory` resolves the right controller from the action string at runtime.
+- **MVC + Loose Coupling** (client) — `view` / `controller` / `model` are separated; the View never touches sockets directly.
+- **Single Responsibility** — networking (`server`), routing (`controller`), business logic (`service`), and persistence (`dao`) are all separate layers.
 
-## Running the Tests
-
-Open the project in IntelliJ IDEA → right-click `ServicePetTest` → **Run 'ServicePetTest'**.
-
-All 6 tests should pass:
+## Project layout (identical structure in both servers, per spec)
 
 ```
-JUnit version 4.13.2
-......
-Time: 0.048
-OK (6 tests)
+PetServer/                        AdoptionServer/
+├── lib/                          ├── lib/
+│   ├── AlgorithmModule.jar       │   └── gson-2.10.jar          (no algo jar)
+│   └── gson-2.10.jar             ├── src/main/java/com/hit/
+├── src/main/java/com/hit/        │   ├── dm/ (AdoptionRequest, User)
+│   ├── dm/ (Pet)                 │   ├── dao/ (IDao, AdoptionRequestDaoFileImpl)
+│   ├── dao/ (IDao, PetDaoFileImpl)│   ├── service/ (ServiceAdoption)
+│   ├── service/ (ServicePet)     │   ├── controller/ (Controller, ControllerFactory, AdoptionController)
+│   ├── controller/ (Controller,  │   ├── model/ (Request, Response)
+│   │   ControllerFactory,        │   └── server/ (Server, HandleRequest, ServerDriver)
+│   │   PetController)            ├── src/main/test/  (ServiceAdoptionTest)
+│   ├── model/ (Request, Response)└── src/main/resources/adoptions.dat
+│   └── server/ (Server, HandleRequest, ServerDriver)
+├── src/main/test/  (ServicePetTest)
+└── src/main/resources/pets.dat
 ```
 
-The tests use the real `src/main/resources/datasource.txt`, so after running them you can open that file and see that data was actually written and read back.
+## Running the system
 
-## Dependencies
+Start the two servers first, then the client. In IntelliJ, open each folder as a project (or as modules) and run:
 
-- **JDK 8 or higher**
-- **JUnit 4.13.2** + **Hamcrest 1.3** (bundled in `lib/`)
-- **AlgorithmModule.jar** (bundled in `lib/`; source in the [PetAdoptionAlgoModule](https://github.com/Matanski/PetAdoptionAlgoModule) repo)
+1. **PetServer** — run `com.hit.server.ServerDriver` (listens on port 34567)
+2. **AdoptionServer** — run `com.hit.server.ServerDriver` (listens on port 34568)
+3. **PetAdoptionClient** — run `com.hit.client.Launcher`
+
+> Run `Launcher`, **not** `MainApp`. JavaFX refuses to start a class that extends `Application`
+> when the JavaFX jars are on the plain classpath; `Launcher` (which does not extend `Application`)
+> works around that so the bundled jars in `lib/` are enough — no module-path setup needed.
+
+## Tests
+
+Each server has a JUnit 4 test that wires Service + DAO (+ algorithm for the pet server) together:
+
+- `PetServer` → `ServicePetTest` (6 tests)
+- `AdoptionServer` → `ServiceAdoptionTest` (6 tests)
+
+## Dependencies (all bundled in each project's `lib/`)
+
+- **gson 2.10** — JSON serialization (both servers + client)
+- **AlgorithmModule.jar** — Part A library (pet server only)
+- **JavaFX 23 (Windows)** — client UI
+- **JUnit 4.13.2 + Hamcrest 1.3** — referenced from IntelliJ's bundled JUnit library
 
 ## Course Info
 
-- **Course:** Advanced Java Programming
-- **Institution:** HIT — Holon Institute of Technology
+- **Course:** Advanced Java Programming — HIT, Holon Institute of Technology
 - **Instructor:** Nissim Barami
 - **Semester:** B 2026

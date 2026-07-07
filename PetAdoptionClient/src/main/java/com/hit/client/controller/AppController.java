@@ -11,19 +11,24 @@ import com.hit.client.model.ServerClient;
 import java.util.ArrayList;
 import java.util.List;
 
-// MVC Controller: mediates between View and Model (ServerClient)
+// MVC Controller: mediates between the View and the Model (ServerClient).
+// There are two servers now, so we keep two clients and route each domain to its own server:
+//   pet/*      -> pet server
+//   adoption/* -> adoption server
 public class AppController {
-    private final ServerClient client;
+    private final ServerClient petClient;
+    private final ServerClient adoptionClient;
     private final Gson gson = new Gson();
 
-    public AppController(String host, int port) {
-        this.client = new ServerClient(host, port);
+    public AppController(String host, int petPort, int adoptionPort) {
+        this.petClient = new ServerClient(host, petPort);
+        this.adoptionClient = new ServerClient(host, adoptionPort);
     }
 
     public String addPet(Pet pet) {
         try {
             JsonObject body = gson.toJsonTree(pet).getAsJsonObject();
-            JsonObject response = client.send("pet/save", body);
+            JsonObject response = petClient.send("pet/save", body);
             return getMessage(response);
         } catch (Exception e) {
             return "Error: " + e.getMessage();
@@ -34,7 +39,7 @@ public class AppController {
         try {
             JsonObject body = new JsonObject();
             body.addProperty("id", id);
-            JsonObject response = client.send("pet/get", body);
+            JsonObject response = petClient.send("pet/get", body);
             if (isOk(response)) {
                 return gson.fromJson(response.get("data"), Pet.class);
             }
@@ -47,8 +52,7 @@ public class AppController {
     public List<Pet> getAllPets() {
         List<Pet> pets = new ArrayList<>();
         try {
-            JsonObject body = new JsonObject();
-            JsonObject response = client.send("pet/getAll", body);
+            JsonObject response = petClient.send("pet/getAll", new JsonObject());
             if (isOk(response)) {
                 JsonArray arr = response.get("data").getAsJsonArray();
                 for (JsonElement el : arr) {
@@ -65,7 +69,7 @@ public class AppController {
         try {
             JsonObject body = new JsonObject();
             body.addProperty("id", id);
-            JsonObject response = client.send("pet/delete", body);
+            JsonObject response = petClient.send("pet/delete", body);
             return getMessage(response);
         } catch (Exception e) {
             return "Error: " + e.getMessage();
@@ -75,7 +79,7 @@ public class AppController {
     public String updatePet(Pet pet) {
         try {
             JsonObject body = gson.toJsonTree(pet).getAsJsonObject();
-            JsonObject response = client.send("pet/update", body);
+            JsonObject response = petClient.send("pet/update", body);
             return getMessage(response);
         } catch (Exception e) {
             return "Error: " + e.getMessage();
@@ -85,7 +89,7 @@ public class AppController {
     public String submitAdoption(AdoptionRequest request) {
         try {
             JsonObject body = gson.toJsonTree(request).getAsJsonObject();
-            JsonObject response = client.send("adoption/submit", body);
+            JsonObject response = adoptionClient.send("adoption/submit", body);
             return getMessage(response);
         } catch (Exception e) {
             return "Error: " + e.getMessage();
@@ -95,8 +99,7 @@ public class AppController {
     public List<AdoptionRequest> getAllAdoptions() {
         List<AdoptionRequest> list = new ArrayList<>();
         try {
-            JsonObject body = new JsonObject();
-            JsonObject response = client.send("adoption/getAll", body);
+            JsonObject response = adoptionClient.send("adoption/getAll", new JsonObject());
             if (isOk(response)) {
                 JsonArray arr = response.get("data").getAsJsonArray();
                 for (JsonElement el : arr) {
@@ -113,7 +116,7 @@ public class AppController {
         try {
             JsonObject body = new JsonObject();
             body.addProperty("id", id);
-            JsonObject response = client.send("adoption/approve", body);
+            JsonObject response = adoptionClient.send("adoption/approve", body);
             return getMessage(response);
         } catch (Exception e) {
             return "Error: " + e.getMessage();
@@ -124,7 +127,7 @@ public class AppController {
         try {
             JsonObject body = new JsonObject();
             body.addProperty("id", id);
-            JsonObject response = client.send("adoption/reject", body);
+            JsonObject response = adoptionClient.send("adoption/reject", body);
             return getMessage(response);
         } catch (Exception e) {
             return "Error: " + e.getMessage();

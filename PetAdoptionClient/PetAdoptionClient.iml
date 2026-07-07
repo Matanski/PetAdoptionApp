@@ -15,25 +15,25 @@
     </orderEntry>
     <orderEntry type="module-library">
       <library name="javafx-base">
-        <CLASSES><root url="jar://$MODULE_DIR$/lib/javafx-base-23-mac-aarch64.jar!/" /></CLASSES>
+        <CLASSES><root url="jar://$MODULE_DIR$/lib/javafx-base-23-win.jar!/" /></CLASSES>
         <JAVADOC /><SOURCES />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library name="javafx-controls">
-        <CLASSES><root url="jar://$MODULE_DIR$/lib/javafx-controls-23-mac-aarch64.jar!/" /></CLASSES>
+        <CLASSES><root url="jar://$MODULE_DIR$/lib/javafx-controls-23-win.jar!/" /></CLASSES>
         <JAVADOC /><SOURCES />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library name="javafx-graphics">
-        <CLASSES><root url="jar://$MODULE_DIR$/lib/javafx-graphics-23-mac-aarch64.jar!/" /></CLASSES>
+        <CLASSES><root url="jar://$MODULE_DIR$/lib/javafx-graphics-23-win.jar!/" /></CLASSES>
         <JAVADOC /><SOURCES />
       </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library name="javafx-fxml">
-        <CLASSES><root url="jar://$MODULE_DIR$/lib/javafx-fxml-23-mac-aarch64.jar!/" /></CLASSES>
+        <CLASSES><root url="jar://$MODULE_DIR$/lib/javafx-fxml-23-win.jar!/" /></CLASSES>
         <JAVADOC /><SOURCES />
       </library>
     </orderEntry>
