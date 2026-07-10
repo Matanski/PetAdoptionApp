@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-// saves and loads adoption requests from a file
+// saves and loads adoption requests from a file.
+// the public methods are synchronized so concurrent client threads cannot
+// interleave a read and a write and corrupt the data file.
 public class AdoptionRequestDaoFileImpl implements IDao<AdoptionRequest> {
 
     private String filePath;
@@ -43,14 +45,14 @@ public class AdoptionRequestDaoFileImpl implements IDao<AdoptionRequest> {
     }
 
     @Override
-    public void save(AdoptionRequest request) throws Exception {
+    public synchronized void save(AdoptionRequest request) throws Exception {
         List<AdoptionRequest> requests = readAll();
         requests.add(request);
         writeAll(requests);
     }
 
     @Override
-    public AdoptionRequest get(int id) throws Exception {
+    public synchronized AdoptionRequest get(int id) throws Exception {
         for (AdoptionRequest r : readAll()) {
             if (r.getId() == id)
                 return r;
@@ -59,12 +61,12 @@ public class AdoptionRequestDaoFileImpl implements IDao<AdoptionRequest> {
     }
 
     @Override
-    public Collection<AdoptionRequest> getAll() throws Exception {
+    public synchronized Collection<AdoptionRequest> getAll() throws Exception {
         return readAll();
     }
 
     @Override
-    public void delete(int id) throws Exception {
+    public synchronized void delete(int id) throws Exception {
         List<AdoptionRequest> requests = readAll();
         for (int i = 0; i < requests.size(); i++) {
             if (requests.get(i).getId() == id) {
@@ -76,7 +78,7 @@ public class AdoptionRequestDaoFileImpl implements IDao<AdoptionRequest> {
     }
 
     @Override
-    public void update(AdoptionRequest request) throws Exception {
+    public synchronized void update(AdoptionRequest request) throws Exception {
         List<AdoptionRequest> requests = readAll();
         for (int i = 0; i < requests.size(); i++) {
             if (requests.get(i).getId() == request.getId()) {

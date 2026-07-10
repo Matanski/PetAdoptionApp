@@ -7,7 +7,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-// saves and loads pets from a file using object serialization
+// saves and loads pets from a file using object serialization.
+// the public methods are synchronized so concurrent client threads cannot
+// interleave a read and a write and corrupt the data file.
 public class PetDaoFileImpl implements IDao<Pet> {
 
     private String filePath;
@@ -45,14 +47,14 @@ public class PetDaoFileImpl implements IDao<Pet> {
     }
 
     @Override
-    public void save(Pet pet) throws Exception {
+    public synchronized void save(Pet pet) throws Exception {
         List<Pet> pets = readAll();
         pets.add(pet);
         writeAll(pets);
     }
 
     @Override
-    public Pet get(int id) throws Exception {
+    public synchronized Pet get(int id) throws Exception {
         for (Pet p : readAll()) {
             if (p.getId() == id)
                 return p;
@@ -61,12 +63,12 @@ public class PetDaoFileImpl implements IDao<Pet> {
     }
 
     @Override
-    public Collection<Pet> getAll() throws Exception {
+    public synchronized Collection<Pet> getAll() throws Exception {
         return readAll();
     }
 
     @Override
-    public void delete(int id) throws Exception {
+    public synchronized void delete(int id) throws Exception {
         List<Pet> pets = readAll();
         for (int i = 0; i < pets.size(); i++) {
             if (pets.get(i).getId() == id) {
@@ -78,7 +80,7 @@ public class PetDaoFileImpl implements IDao<Pet> {
     }
 
     @Override
-    public void update(Pet pet) throws Exception {
+    public synchronized void update(Pet pet) throws Exception {
         List<Pet> pets = readAll();
         for (int i = 0; i < pets.size(); i++) {
             if (pets.get(i).getId() == pet.getId()) {
