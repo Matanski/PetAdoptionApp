@@ -235,6 +235,7 @@ public class MainApp extends Application {
             if (id == null) return;
             ok(controller.approveAdoption(id));
             refreshAdoptions();
+            refreshPets();   // the approved pet is now marked "adopted"
         });
 
         rejectBtn.setOnAction(e -> {

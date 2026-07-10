@@ -46,6 +46,13 @@ public class PetController implements Controller {
                 service.updatePet(pet);
                 return Response.ok("Pet updated");
 
+            } else if (subAction.equals("setStatus")) {
+                // used by the adoption server when a request is approved
+                int id = body.get("id").getAsInt();
+                String status = body.get("status").getAsString();
+                service.setStatus(id, status);
+                return Response.ok("Pet status updated to " + status);
+
             } else {
                 return Response.error("Unknown subAction: " + subAction);
             }

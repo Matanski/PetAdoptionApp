@@ -5,6 +5,8 @@ import com.hit.controller.ControllerFactory;
 import com.hit.dao.AdoptionRequestDaoFileImpl;
 import com.hit.dao.IDao;
 import com.hit.dm.AdoptionRequest;
+import com.hit.service.IPetStatusUpdater;
+import com.hit.service.PetServerStatusUpdater;
 import com.hit.service.ServiceAdoption;
 
 import java.io.IOException;
@@ -26,7 +28,10 @@ public class Server implements Runnable {
         // initialize all the components this server needs (spec: done inside run())
         IDao<AdoptionRequest> adoptionDao =
                 new AdoptionRequestDaoFileImpl("src/main/resources/adoptions.dat");
-        ServiceAdoption serviceAdoption = new ServiceAdoption(adoptionDao);
+
+        // approving a request marks the pet adopted on the pet server (port 34567)
+        IPetStatusUpdater petStatusUpdater = new PetServerStatusUpdater("localhost", 34567);
+        ServiceAdoption serviceAdoption = new ServiceAdoption(adoptionDao, petStatusUpdater);
 
         // register the adoption controller in the factory (happens once on startup)
         ControllerFactory.register("adoption", new AdoptionController(serviceAdoption));

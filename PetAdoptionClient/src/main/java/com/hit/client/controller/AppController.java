@@ -138,8 +138,15 @@ public class AppController {
         return response != null && response.get("status").getAsInt() == 200;
     }
 
+    // on success the server puts its human-readable text in "data"
+    // ("Pet saved successfully"); on failure the text is in "message".
     private String getMessage(JsonObject response) {
         if (response == null) return "No response from server";
+        JsonElement data = response.get("data");
+        if (isOk(response) && data != null && data.isJsonPrimitive()
+                && data.getAsJsonPrimitive().isString()) {
+            return data.getAsString();
+        }
         return response.get("message").getAsString();
     }
 }

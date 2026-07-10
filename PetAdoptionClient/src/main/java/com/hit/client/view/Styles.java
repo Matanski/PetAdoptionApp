@@ -55,6 +55,8 @@ public class Styles {
             case "available":
             case "approved":
                 return SUCCESS;
+            case "adopted":
+                return PRIMARY;
             case "rejected":
                 return DANGER;
             case "pending":

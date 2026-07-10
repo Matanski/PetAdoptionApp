@@ -20,6 +20,9 @@ public class ServicePet {
     }
 
     public void addPet(Pet pet) throws Exception {
+        if (dao.get(pet.getId()) != null) {
+            throw new IllegalArgumentException("A pet with ID " + pet.getId() + " already exists");
+        }
         // compress the description before saving to save space
         pet.setDescription(algo.compress(pet.getDescription()));
         dao.save(pet);
@@ -48,6 +51,18 @@ public class ServicePet {
 
     public void updatePet(Pet pet) throws Exception {
         pet.setDescription(algo.compress(pet.getDescription()));
+        dao.update(pet);
+    }
+
+    // changes only the status field. the pet is read straight from the dao so its
+    // description stays compressed - re-compressing an already compressed value
+    // would corrupt it.
+    public void setStatus(int id, String status) throws Exception {
+        Pet pet = dao.get(id);
+        if (pet == null) {
+            throw new IllegalArgumentException("No pet with ID " + id);
+        }
+        pet.setStatus(status);
         dao.update(pet);
     }
 }
