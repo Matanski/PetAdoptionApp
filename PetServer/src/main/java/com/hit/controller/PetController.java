@@ -8,6 +8,9 @@ import com.hit.service.ServicePet;
 
 import java.util.Collection;
 
+// separation layer between the networking and the ServicePet business logic.
+// exposes the pet API as explicit typed methods; handle() only routes the
+// incoming sub-action to the matching method.
 public class PetController implements Controller {
 
     private ServicePet service;
@@ -17,48 +20,83 @@ public class PetController implements Controller {
         this.service = service;
     }
 
+    // ─── the exposed API ─────────────────────────────────────────────────────
+
+    public Response savePet(Pet pet) {
+        try {
+            service.addPet(pet);
+            return Response.ok("Pet saved successfully");
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response getPet(int id) {
+        try {
+            Pet pet = service.getPet(id);
+            return pet == null ? Response.notFound("Pet not found") : Response.ok(pet);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response getAllPets() {
+        try {
+            Collection<Pet> pets = service.getAllPets();
+            return Response.ok(pets);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response updatePet(Pet pet) {
+        try {
+            service.updatePet(pet);
+            return Response.ok("Pet updated");
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response deletePet(int id) {
+        try {
+            service.removePet(id);
+            return Response.ok("Pet deleted");
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response setPetStatus(int id, String status) {
+        try {
+            service.setStatus(id, status);
+            return Response.ok("Pet status updated to " + status);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    // ─── routing ─────────────────────────────────────────────────────────────
+
     @Override
     public Response handle(String subAction, JsonObject body) {
-        try {
-            if (subAction.equals("save")) {
+        switch (subAction) {
+            case "save":
                 requireField(body, "id");
-                Pet pet = gson.fromJson(body, Pet.class);
-                service.addPet(pet);
-                return Response.ok("Pet saved successfully");
-
-            } else if (subAction.equals("get")) {
-                Pet pet = service.getPet(requireInt(body, "id"));
-                if (pet == null)
-                    return Response.notFound("Pet not found");
-                return Response.ok(pet);
-
-            } else if (subAction.equals("getAll")) {
-                Collection<Pet> pets = service.getAllPets();
-                return Response.ok(pets);
-
-            } else if (subAction.equals("delete")) {
-                service.removePet(requireInt(body, "id"));
-                return Response.ok("Pet deleted");
-
-            } else if (subAction.equals("update")) {
+                return savePet(gson.fromJson(body, Pet.class));
+            case "get":
+                return getPet(requireInt(body, "id"));
+            case "getAll":
+                return getAllPets();
+            case "update":
                 requireField(body, "id");
-                Pet pet = gson.fromJson(body, Pet.class);
-                service.updatePet(pet);
-                return Response.ok("Pet updated");
-
-            } else if (subAction.equals("setStatus")) {
-                // used by the adoption server when a request is approved
-                int id = requireInt(body, "id");
-                String status = requireString(body, "status");
-                service.setStatus(id, status);
-                return Response.ok("Pet status updated to " + status);
-
-            } else {
+                return updatePet(gson.fromJson(body, Pet.class));
+            case "delete":
+                return deletePet(requireInt(body, "id"));
+            case "setStatus":
+                return setPetStatus(requireInt(body, "id"), requireString(body, "status"));
+            default:
                 return Response.error("Unknown subAction: " + subAction);
-            }
-
-        } catch (Exception e) {
-            return Response.error("Error in PetController: " + e.getMessage());
         }
     }
 

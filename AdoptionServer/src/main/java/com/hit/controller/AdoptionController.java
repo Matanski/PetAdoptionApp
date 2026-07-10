@@ -8,6 +8,9 @@ import com.hit.service.ServiceAdoption;
 
 import java.util.Collection;
 
+// separation layer between the networking and the ServiceAdoption business logic.
+// exposes the adoption API as explicit typed methods; handle() only routes the
+// incoming sub-action to the matching method.
 public class AdoptionController implements Controller {
 
     private ServiceAdoption service;
@@ -17,43 +20,82 @@ public class AdoptionController implements Controller {
         this.service = service;
     }
 
+    // ─── the exposed API ─────────────────────────────────────────────────────
+
+    public Response submitRequest(AdoptionRequest request) {
+        try {
+            service.submitRequest(request);
+            return Response.ok("Request submitted");
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response getRequest(int id) {
+        try {
+            AdoptionRequest request = service.getRequest(id);
+            return request == null ? Response.notFound("Request not found") : Response.ok(request);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response getAllRequests() {
+        try {
+            Collection<AdoptionRequest> requests = service.getAllRequests();
+            return Response.ok(requests);
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response approveRequest(int id) {
+        try {
+            service.approveRequest(id);
+            return Response.ok("Request approved");
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response rejectRequest(int id) {
+        try {
+            service.rejectRequest(id);
+            return Response.ok("Request rejected");
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    public Response deleteRequest(int id) {
+        try {
+            service.deleteRequest(id);
+            return Response.ok("Request deleted");
+        } catch (Exception e) {
+            return Response.error(e.getMessage());
+        }
+    }
+
+    // ─── routing ─────────────────────────────────────────────────────────────
+
     @Override
     public Response handle(String subAction, JsonObject body) {
-        try {
-            if (subAction.equals("submit")) {
+        switch (subAction) {
+            case "submit":
                 requireField(body, "id");
-                AdoptionRequest request = gson.fromJson(body, AdoptionRequest.class);
-                service.submitRequest(request);
-                return Response.ok("Request submitted");
-
-            } else if (subAction.equals("get")) {
-                AdoptionRequest request = service.getRequest(requireInt(body, "id"));
-                if (request == null)
-                    return Response.notFound("Request not found");
-                return Response.ok(request);
-
-            } else if (subAction.equals("getAll")) {
-                Collection<AdoptionRequest> requests = service.getAllRequests();
-                return Response.ok(requests);
-
-            } else if (subAction.equals("approve")) {
-                service.approveRequest(requireInt(body, "id"));
-                return Response.ok("Request approved");
-
-            } else if (subAction.equals("reject")) {
-                service.rejectRequest(requireInt(body, "id"));
-                return Response.ok("Request rejected");
-
-            } else if (subAction.equals("delete")) {
-                service.deleteRequest(requireInt(body, "id"));
-                return Response.ok("Request deleted");
-
-            } else {
+                return submitRequest(gson.fromJson(body, AdoptionRequest.class));
+            case "get":
+                return getRequest(requireInt(body, "id"));
+            case "getAll":
+                return getAllRequests();
+            case "approve":
+                return approveRequest(requireInt(body, "id"));
+            case "reject":
+                return rejectRequest(requireInt(body, "id"));
+            case "delete":
+                return deleteRequest(requireInt(body, "id"));
+            default:
                 return Response.error("Unknown subAction: " + subAction);
-            }
-
-        } catch (Exception e) {
-            return Response.error("Error in AdoptionController: " + e.getMessage());
         }
     }
 

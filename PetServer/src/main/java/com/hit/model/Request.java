@@ -1,13 +1,12 @@
 package com.hit.model;
 
-import com.google.gson.JsonObject;
-
-// represents a request that comes from the client in JSON format
-// has a headers section with the action and a body with the data
-public class Request {
+// generic request that comes from the client as JSON.
+// T is the type of the body content (a data model, a JsonObject, etc.), which lets
+// the same Request shape carry any payload - see HandleRequest for the TypeToken parse.
+public class Request<T> {
 
     private Headers headers;
-    private JsonObject body;
+    private T body;
 
     public static class Headers {
         private String action;
@@ -21,7 +20,7 @@ public class Request {
         return headers;
     }
 
-    public JsonObject getBody() {
+    public T getBody() {
         return body;
     }
 }

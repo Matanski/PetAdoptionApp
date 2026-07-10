@@ -2,12 +2,14 @@ package com.hit.server;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.reflect.TypeToken;
 import com.hit.controller.Controller;
 import com.hit.controller.ControllerFactory;
 import com.hit.model.Request;
 import com.hit.model.Response;
 
 import java.io.*;
+import java.lang.reflect.Type;
 import java.net.Socket;
 import java.util.Scanner;
 
@@ -44,7 +46,10 @@ public class HandleRequest implements Runnable {
     // parses the request, finds the controller through the factory and runs it
     private Response process(String json) {
         try {
-            Request request = gson.fromJson(json, Request.class);
+            // parse the generic Request<T> with a TypeToken; here the body stays a
+            // JsonObject and each controller converts it to its own data model.
+            Type type = new TypeToken<Request<JsonObject>>() {}.getType();
+            Request<JsonObject> request = gson.fromJson(json, type);
             if (request == null || request.getHeaders() == null
                     || request.getHeaders().getAction() == null) {
                 return Response.error("Malformed request: missing headers.action");
