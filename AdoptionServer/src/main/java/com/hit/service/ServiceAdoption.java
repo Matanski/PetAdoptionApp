@@ -28,6 +28,11 @@ public class ServiceAdoption {
             throw new IllegalArgumentException(
                     "A request with ID " + request.getId() + " already exists");
         }
+        // a new request always starts pending. json parsing bypasses the constructor,
+        // so the default is applied here rather than trusting the client to send it.
+        if (request.getStatus() == null || request.getStatus().isEmpty()) {
+            request.setStatus("pending");
+        }
         dao.save(request);
     }
 
@@ -69,11 +74,19 @@ public class ServiceAdoption {
         if (request == null) {
             throw new IllegalArgumentException("No request with ID " + id);
         }
+        // if this request had already been approved the pet was marked adopted,
+        // so put it back on the board before rejecting.
+        if ("approved".equals(request.getStatus()) && petStatusUpdater != null) {
+            petStatusUpdater.setStatus(request.getPetId(), "available");
+        }
         request.setStatus("rejected");
         dao.update(request);
     }
 
     public void deleteRequest(int id) throws Exception {
+        if (dao.get(id) == null) {
+            throw new IllegalArgumentException("No request with ID " + id);
+        }
         dao.delete(id);
     }
 }

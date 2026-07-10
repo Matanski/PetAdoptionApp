@@ -23,6 +23,11 @@ public class ServicePet {
         if (dao.get(pet.getId()) != null) {
             throw new IllegalArgumentException("A pet with ID " + pet.getId() + " already exists");
         }
+        // a new pet is always available. json parsing bypasses the constructor,
+        // so the default is applied here rather than trusting the client to send it.
+        if (pet.getStatus() == null || pet.getStatus().isEmpty()) {
+            pet.setStatus("available");
+        }
         // compress the description before saving to save space
         pet.setDescription(algo.compress(pet.getDescription()));
         dao.save(pet);
@@ -46,10 +51,21 @@ public class ServicePet {
     }
 
     public void removePet(int id) throws Exception {
+        if (dao.get(id) == null) {
+            throw new IllegalArgumentException("No pet with ID " + id);
+        }
         dao.delete(id);
     }
 
     public void updatePet(Pet pet) throws Exception {
+        Pet existing = dao.get(pet.getId());
+        if (existing == null) {
+            throw new IllegalArgumentException("No pet with ID " + pet.getId());
+        }
+        // the status is not part of the edit form - it only changes through
+        // setStatus (for example when an adoption is approved), so keep the
+        // stored value instead of the one the client sent.
+        pet.setStatus(existing.getStatus());
         pet.setDescription(algo.compress(pet.getDescription()));
         dao.update(pet);
     }

@@ -21,13 +21,13 @@ public class AdoptionController implements Controller {
     public Response handle(String subAction, JsonObject body) {
         try {
             if (subAction.equals("submit")) {
+                requireField(body, "id");
                 AdoptionRequest request = gson.fromJson(body, AdoptionRequest.class);
                 service.submitRequest(request);
                 return Response.ok("Request submitted");
 
             } else if (subAction.equals("get")) {
-                int id = body.get("id").getAsInt();
-                AdoptionRequest request = service.getRequest(id);
+                AdoptionRequest request = service.getRequest(requireInt(body, "id"));
                 if (request == null)
                     return Response.notFound("Request not found");
                 return Response.ok(request);
@@ -37,18 +37,15 @@ public class AdoptionController implements Controller {
                 return Response.ok(requests);
 
             } else if (subAction.equals("approve")) {
-                int id = body.get("id").getAsInt();
-                service.approveRequest(id);
+                service.approveRequest(requireInt(body, "id"));
                 return Response.ok("Request approved");
 
             } else if (subAction.equals("reject")) {
-                int id = body.get("id").getAsInt();
-                service.rejectRequest(id);
+                service.rejectRequest(requireInt(body, "id"));
                 return Response.ok("Request rejected");
 
             } else if (subAction.equals("delete")) {
-                int id = body.get("id").getAsInt();
-                service.deleteRequest(id);
+                service.deleteRequest(requireInt(body, "id"));
                 return Response.ok("Request deleted");
 
             } else {
@@ -58,5 +55,16 @@ public class AdoptionController implements Controller {
         } catch (Exception e) {
             return Response.error("Error in AdoptionController: " + e.getMessage());
         }
+    }
+
+    private void requireField(JsonObject body, String field) {
+        if (body == null || !body.has(field) || body.get(field).isJsonNull()) {
+            throw new IllegalArgumentException("Missing field: " + field);
+        }
+    }
+
+    private int requireInt(JsonObject body, String field) {
+        requireField(body, field);
+        return body.get(field).getAsInt();
     }
 }

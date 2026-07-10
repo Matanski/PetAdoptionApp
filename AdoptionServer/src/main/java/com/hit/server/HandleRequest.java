@@ -1,6 +1,7 @@
 package com.hit.server;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.hit.controller.Controller;
 import com.hit.controller.ControllerFactory;
 import com.hit.model.Request;
@@ -21,42 +22,45 @@ public class HandleRequest implements Runnable {
 
     @Override
     public void run() {
-        try {
-            // wrap the socket streams so we can read/write text easily
-            Scanner reader = new Scanner(new InputStreamReader(socket.getInputStream()));
-            PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
+        // wrap the socket streams so we can read/write text easily
+        try (Socket client = socket;
+             Scanner reader = new Scanner(new InputStreamReader(client.getInputStream()));
+             PrintWriter writer = new PrintWriter(new OutputStreamWriter(client.getOutputStream()))) {
 
-            // read the json request
             if (!reader.hasNextLine()) return;
             String json = reader.nextLine();
             System.out.println("Got request: " + json);
 
-            // parse the request and get the action from the header
-            Request request = gson.fromJson(json, Request.class);
-            String action = request.getHeaders().getAction();
-
-            // find the right controller using the factory
-            Controller controller = ControllerFactory.getController(action);
-            Response response;
-
-            if (controller == null) {
-                System.out.println("No controller for action: " + action);
-                response = Response.error("Unknown action: " + action);
-            } else {
-                String subAction = ControllerFactory.getSubAction(action);
-                response = controller.handle(subAction, request.getBody());
-            }
-
-            // send response back to client
+            // always answer the client, even when the request is broken
+            Response response = process(json);
             writer.println(gson.toJson(response));
             writer.flush();
 
-            reader.close();
-            writer.close();
-            socket.close();
+        } catch (IOException e) {
+            System.out.println("Error handling request: " + e.getMessage());
+        }
+    }
+
+    // parses the request, finds the controller through the factory and runs it
+    private Response process(String json) {
+        try {
+            Request request = gson.fromJson(json, Request.class);
+            if (request == null || request.getHeaders() == null
+                    || request.getHeaders().getAction() == null) {
+                return Response.error("Malformed request: missing headers.action");
+            }
+
+            String action = request.getHeaders().getAction();
+            Controller controller = ControllerFactory.getController(action);
+            if (controller == null) {
+                return Response.error("Unknown action: " + action);
+            }
+
+            JsonObject body = request.getBody() != null ? request.getBody() : new JsonObject();
+            return controller.handle(ControllerFactory.getSubAction(action), body);
 
         } catch (Exception e) {
-            System.out.println("Error handling request: " + e.getMessage());
+            return Response.error("Bad request: " + e.getMessage());
         }
     }
 }
